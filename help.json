@@ -1,0 +1,10 @@
+{
+    "help": {
+        "name": ".help <Optional:page>",
+        "value": "Displays the help menu, with an optional page selection"
+    },
+    "invite": {
+        "name": ".invite",
+        "value": "Shows invite link for the bot"
+    }
+}
