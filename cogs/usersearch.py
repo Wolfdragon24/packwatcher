@@ -3,7 +3,7 @@ from discord import app_commands
 import requests
 
 ERROR_HEX = 0xeb1515
-SUCCESS_HEX = 0
+SUCCESS_HEX = 0x6edd67
 
 PLAYERDB_MINECRAFT_API = "https://playerdb.co/api/player/minecraft/"
 
@@ -20,14 +20,14 @@ class UserSearch(app_commands.Group):
 
         if (request.status_code != requests.codes['ok']):
             error_embed_dict = {
-                "title": "User Search Error",
+                "title": "Error - User Search",
                 "footer": {
                     "text": requester
                 },
                 "color": ERROR_HEX,
                 "fields": [
                     {
-                        "name": f"Error - {request_data.message}",
+                        "name": f"{request_data.message}",
                         "value": f"No user was found with the username or UUID '{discord.utils.escape_markdown(search)}'"
                     }
                 ]
