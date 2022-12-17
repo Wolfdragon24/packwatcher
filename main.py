@@ -3,10 +3,12 @@ import asyncio
 import os
 from typing import Literal, Optional
 
+import quart
 import discord
 from discord.ext import commands
 from discord.ext.commands import Greedy, Context
 from dotenv import dotenv_values
+from quart import Quart
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -99,8 +101,16 @@ async def sync(
 
 EXTENSION_LIST = ["cogs.playtime", "cogs.serverstatus", "cogs.usersearch"]
 
+app = Quart(__name__)
+
+@app.route("/")
+def starting_url():
+    status_code = quart.Response(status=200)
+    return status_code
+
 async def main():
     async with bot:
+        await app.run_task(host='0.0.0.0', port=10000)
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
         await bot.start(config["DISCORD_BOT_TOKEN"])
