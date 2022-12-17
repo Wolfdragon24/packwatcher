@@ -1,8 +1,9 @@
 import os
 import socket
-import discord
-from discord import app_commands
+from urllib.parse import quote_plus
 
+import discord
+from discord.ext import commands
 from pymongo import MongoClient
 from mcstatus import JavaServer
 from dotenv import dotenv_values
@@ -16,11 +17,12 @@ config = {
     **os.environ,
 }
 
-USER = config["MONGODB_USER"]
-PW = config["MONGODB_PASSWORD"]
+MONGO_USER = quote_plus(config["MONGODB_USER"])
+MONGO_PW = quote_plus(config["MONGODB_PASSWORD"])
+MONGO_URL = config["MONGODB_URL"]
 BOT_OWNER = int(config["BOT_OWNER"])
 
-cluster = MongoClient(f"mongodb+srv://{USER}:{PW}@packwatchercluter-iune6.mongodb.net/test?retryWrites=true&w=majority&authSource=admin")
+cluster = MongoClient(f"mongodb+srv://{MONGO_USER}:{MONGO_PW}@{MONGO_URL}")
 db = cluster["discordbot"]
 defaults = db["defaults"]
 
@@ -35,16 +37,17 @@ def getindex(lst, key, value):
             return i
     return None
 
-class ServerStatus(app_commands.Group):
-    @app_commands.command()
-    @app_commands.describe(search="IP of server to search, if not default")
-    async def status(self, interaction: discord.Interaction, search: str = "default"):
-        """Displays status information about an inputted or default server."""
+class ServerStatus(commands.Cog):
+    @commands.hybrid_command(name="status")
+    async def status(self, ctx: commands.Context, server_ip: str = None) -> None:
+        """Displays status information about an inputted or default server. (.status <Optional: server_ip> or /status <Optional: server_ip>"""
 
-        requester = f"Requested by {interaction.user.name}."
+        if ctx.interaction:
+            await ctx.interaction.response.defer(ephemeral=True)
+        requester = f"Requested by {ctx.author.name}."
 
-        if search == "default":
-            if isinstance(interaction.channel, discord.channel.DMChannel):
+        if server_ip is None:
+            if isinstance(ctx.channel, discord.channel.DMChannel):
                 error_embed_dict = {
                     "title": "Error - Default Server Status",
                     "footer": {
@@ -59,10 +62,10 @@ class ServerStatus(app_commands.Group):
                     ]
                 }
 
-                await interaction.send_message(embed=discord.Embed.from_dict(error_embed_dict))
+                await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
                 return
 
-            defaults_index = getindex(default_servers, "guildid", interaction.guild_id)
+            defaults_index = getindex(default_servers, "guildid", ctx.guild.id)
 
             if defaults_index is None:
                 error_embed_dict = {
@@ -79,12 +82,10 @@ class ServerStatus(app_commands.Group):
                     ]
                 }
 
-                await interaction.send_message(embed=discord.Embed.from_dict(error_embed_dict))
+                await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
                 return
 
             server_ip = default_servers[defaults_index]["serverip"]
-        else:
-            server_ip = search
 
         server = JavaServer.lookup(server_ip)
         try:
@@ -108,7 +109,7 @@ class ServerStatus(app_commands.Group):
                 ]
             }
 
-            await interaction.send_message(embed=discord.Embed.from_dict(offline_embed_dict))
+            await ctx.send(embed=discord.Embed.from_dict(offline_embed_dict))
             return
 
         online = info.players.online
@@ -131,19 +132,23 @@ class ServerStatus(app_commands.Group):
             "fields": [
                 {
                     "name": "Server IP",
-                    "value": server_ip
+                    "value": server_ip,
+                    "inline": True
                 },
                 {
                     "name": "Status",
-                    "value": 'Server is currently online!'
+                    "value": 'Server is currently online!',
+                    "inline": True
                 },
                 {
                     "name": "Player Count",
-                    "value": player_count
-                }, 
+                    "value": player_count,
+                    "inline": True
+                },
                 {
                     "name": "Version",
-                    "value": version
+                    "value": version,
+                    "inline": True
                 }
             ]
         }
@@ -154,16 +159,17 @@ class ServerStatus(app_commands.Group):
                 "value": discord.utils.escape_markdown(", ".join([player.name for player in info.players.sample]))
             })
 
-        await interaction.send_message(embed=discord.Embed.from_dict(online_embed_dict))
+        await ctx.send(embed=discord.Embed.from_dict(online_embed_dict))
 
-    @app_commands.command()
-    @app_commands.describe(ip="IP of server to set as default")
-    async def setdefault(self, interaction: discord.Interaction, server_ip: str):
-        """Sets the inputted ip as the default for the Discord server."""
+    @commands.hybrid_command(name="setdefault")
+    async def setdefault(self, ctx: commands.Context, server_ip: str) -> None:
+        """Sets the inputted ip as the default for the Discord server. (.setdefault <server_ip> or /setdefault <server_ip>)"""
 
-        requester = f"Requested by {interaction.user.name}."
+        if ctx.interaction:
+            await ctx.interaction.response.defer(ephemeral=True)
+        requester = f"Requested by {ctx.author.name}."
 
-        if isinstance(interaction.channel, discord.channel.DMChannel):
+        if isinstance(ctx.channel, discord.channel.DMChannel):
             error_embed_dict = {
                 "title": "Error - Default Server Status",
                 "footer": {
@@ -178,10 +184,10 @@ class ServerStatus(app_commands.Group):
                 ]
             }
 
-            await interaction.send_message(embed=discord.Embed.from_dict(error_embed_dict))
+            await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
             return
         
-        if not interaction.user.guild_permissions.manage_guild and interaction.user.id != BOT_OWNER:
+        if not ctx.author.guild_permissions.manage_guild and ctx.author.id != BOT_OWNER:
             error_embed_dict = {
                 "title": "Error - Insufficient Permissions",
                 "footer": {
@@ -196,10 +202,10 @@ class ServerStatus(app_commands.Group):
                 ]
             }
 
-            await interaction.send_message(embed=discord.Embed.from_dict(error_embed_dict))
+            await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
             return
         
-        guild_id = interaction.guild_id
+        guild_id = ctx.guild.id
         defaults_index = getindex(default_servers, "guildid", guild_id)
 
         if defaults_index is None:
@@ -224,4 +230,7 @@ class ServerStatus(app_commands.Group):
             ]
         }
 
-        await interaction.send_message(embed=discord.Embed.from_dict(success_embed_dict))
+        await ctx.send(embed=discord.Embed.from_dict(success_embed_dict))
+
+async def setup(bot):
+    await bot.add_cog(ServerStatus(bot))
