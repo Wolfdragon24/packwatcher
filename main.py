@@ -1,13 +1,16 @@
 # Imports
+import asyncio
 import os
-import discord
+from typing import Literal, Optional
 
+import discord
 from discord.ext import commands
+from discord.ext.commands import Greedy, Context
 from dotenv import dotenv_values
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
-ENV_POS = os.path.join(BASEDIR, '../.env')
+ENV_POS = os.path.join(BASEDIR, '.env')
 
 config = {
     **dotenv_values(ENV_POS),
@@ -23,12 +26,10 @@ bot.remove_command("help")
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
-    info_status = discord.Activity(type=discord.ActivityType.listening, name=".help")
-    await bot.change_presence(activity=info_status)
 
 # Bot Base Commands
 @bot.command()
-async def invite(ctx):
+async def invite(ctx: Context):
     try:
         await ctx.message.delete()
     except (discord.Forbidden, discord.NotFound, discord.HTTPException):
@@ -49,7 +50,7 @@ async def invite(ctx):
     await ctx.send(embed=embed)
 
 @bot.command()
-async def help(ctx):
+async def help(ctx: Context):
     try:
         await ctx.message.delete()
     except (discord.Forbidden, discord.NotFound, discord.HTTPException):
@@ -62,5 +63,46 @@ async def help(ctx):
         "fields": [],
     }
 
+@bot.command()
+@commands.guild_only()
+@commands.is_owner()
+async def sync(
+  ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    if not guilds:
+        if spec == "~":
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "*":
+            ctx.bot.tree.copy_global_to(guild=ctx.guild)
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "^":
+            ctx.bot.tree.clear_commands(guild=ctx.guild)
+            await ctx.bot.tree.sync(guild=ctx.guild)
+            synced = []
+        else:
+            synced = await ctx.bot.tree.sync()
 
-bot.run(config["DISCORD_BOT_TOKEN"])
+        await ctx.send(
+            f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+        )
+        return
+
+    ret = 0
+    for guild in guilds:
+        try:
+            await ctx.bot.tree.sync(guild=guild)
+        except discord.HTTPException:
+            pass
+        else:
+            ret += 1
+
+    await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
+
+EXTENSION_LIST = ["cogs.playtime", "cogs.serverstatus", "cogs.usersearch"]
+
+async def main():
+    async with bot:
+        for extension in EXTENSION_LIST:
+            await bot.load_extension(extension)
+        await bot.start(config["DISCORD_BOT_TOKEN"])
+
+asyncio.run(main())
