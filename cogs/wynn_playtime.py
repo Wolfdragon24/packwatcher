@@ -20,6 +20,8 @@ from urllib3 import Retry
 from discord.ext import tasks, commands
 from pymongo import MongoClient
 
+import cogs.wynn_guildlist
+
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 ENV_POS = os.path.join(BASEDIR, '../.env')
@@ -70,6 +72,8 @@ try:
     exclusive_users = settings["exclusers"]
 except KeyError:
     exclusive_users = []
+
+srvtrack = {}
 
 def rank_select(value):
     rankselection = {"OWNER":1,"CHIEF":2,"STRATEGIST":3,"CAPTAIN":4,"RECRUITER":5,"RECRUIT":6,"NOT IN GUILD":7}
@@ -206,8 +210,6 @@ class PlaytimeUpdater(commands.Cog):
 
         self.changing_counter += 1
 
-        print(self.stored_playtime)
-
         if self.changing_counter >= 5:
 
             self.changing_counter = 0
@@ -226,11 +228,9 @@ class PlaytimeUpdater(commands.Cog):
             requests.post(PASTEE_BASE_URL, json=changing_payload, headers=paste_headers, timeout=5)
 
             if not self.stored_playtime or self.stored_playtime != old_stored:
-                print("Was playtime difference")
                 if self.playtime_file:
                     try:
                         self.playtime_file = repo.update_file(PLAYTIME_GIT, "Automated Data Generation", str(self.stored_playtime), self.playtime_file.sha)["content"]
-                        print("Updated playtime on github")
                     except github.GithubException:
                         pass
                 else:
@@ -751,6 +751,279 @@ class PlaytimeUpdater(commands.Cog):
         else:
             secembed.set_footer(text=requester)
             await ctx.send(embeds=[embed, secembed])
+
+    # @commands.hybrid_command(name="activity")
+    # async def new_activity(self, ctx: commands.Context, *guild: str):
+    #     """Displays the activity for the inputted guild. (.activity <guild> or /activity guild)"""
+
+    #     if ctx.interaction:
+    #         await ctx.interaction.response.defer(ephemeral=True)
+    #     requester = f"Requested by {ctx.author.name}."
+        
+    #     guild_list = cogs.wynn_guildlist.guild_list
+    #     guild_search = " ".join(guild)
+
+    @commands.command()
+    async def activity(self, ctx, *guildcheck):
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        req = f"Requested by {ctx.author.name}."
+
+        guildlst = wynn_guildlist.guild_list
+        guildsearch = " ".join(guildcheck)
+        global srvtrack
+
+        try:
+            guildstats = requests.get(f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guildsearch}", params=wynn_headers).json()
+
+            members = guildstats["members"]
+
+            total = len(members)
+            count = 0
+
+            req = "Please wait, this process may take a few minutes..."
+            pmsg = f"0/{total} checks completed: 0.0% done."
+            title = f"Guild Activity Progress - {guildsearch}"
+            progress = discord.Embed(title=title, color=0xf5c242)
+
+            progress.add_field(name="Checks Completed", value=pmsg, inline=True)
+            progress.set_footer(text=req)
+
+            pmessage = await ctx.send(embed=progress)
+
+            memberslst = []
+            last = 0
+
+            rankselection = {"OWNER":1,"CHIEF":2,"STRATEGIST":3,"CAPTAIN":4,"RECRUITER":5,"RECRUIT":6}
+            revrankselection = {1:"OWNER",2:"CHIEF",3:"STRATEGIST",4:"CAPTAIN",5:"RECRUITER",6:"RECRUIT"}
+
+            for member in members:
+                #member add
+                username = member["name"]
+                rank = member["rank"]
+                uuid = member["uuid"]
+
+                memberinfo = requests.get(f"https://api.wynncraft.com/v2/player/{uuid}/stats", params=wynn_headers).json()
+                joingrab = memberinfo["data"][0]["meta"]["lastJoin"]
+                lastjoin = joingrab.split("T")
+                lastjoinobj = datetime.strptime(lastjoin[0], "%Y-%m-%d")
+                currenttime = datetime.utcnow()
+                indays = (currenttime - lastjoinobj).days
+
+                member_data = {"username":username,"rank":rankselection[rank],"daysdif":indays}
+                memberslst.append(member_data)
+
+                count += 1
+
+                if (count == last + 20) or (count + 3 > total):
+                    #embed update
+                    req = "Please wait, this process may take a few minutes..."
+                    perc = (count/total)*100
+                    pmsg = f"{count}/{total} checks completed: {perc:.1f}% done."
+                    title = f"Guild Activity Progress - {guildsearch}"
+                    newprogress = discord.Embed(title=title, color=0xf5c242)
+
+                    newprogress.add_field(name="Checks Completed", value=pmsg, inline=True)
+                    newprogress.set_footer(text=req)
+
+                    await pmessage.edit(embed=newprogress)
+                    last = count
+
+            await asyncio.sleep(1)
+            await pmessage.delete()
+
+            memberslst.sort(key = lambda x: x['username'])
+            memberslst.sort(key = lambda x: x["daysdif"],reverse=True)
+            memberslst.sort(key = lambda x: x["rank"])
+
+            title = f"Guild Activity - {guildsearch}"
+            #send message
+            embed = discord.Embed(title=title, color=0x6edd67)
+
+            output = {"rank":"","text":""}
+
+            for player in memberslst:
+                storedrank = player["rank"]
+                rank = revrankselection[storedrank]
+                if output["rank"] == rank: #same or lower rank
+                    if len(output["text"]) < 950:
+                        if player['daysdif'] == 1:
+                            output["text"] += f"\n{player['username']} : Last joined 1 day ago."
+                        else:
+                            output["text"] += f"\n{player['username']} : Last joined {player['daysdif']} days ago."
+                    else: #full
+                        if output["text"]:
+                            output["text"] = discord.utils.escape_markdown(output["text"])
+                            embed.add_field(name=output["rank"],value=output["text"],inline=False)
+                        output = {"rank":rank,"text":""}
+                        if player['daysdif'] == 1:
+                            output["text"] += f"{player['username']} : Last joined 1 day ago."
+                        else:
+                            output["text"] += f"{player['username']} : Last joined {player['daysdif']} days ago."
+                else: #was higher rank
+                    if output["text"]:
+                        output["text"] = discord.utils.escape_markdown(output["text"])
+                        embed.add_field(name=output["rank"],value=output["text"],inline=False)
+                    output = {"rank":rank,"text":""}
+                    if player['daysdif'] == 1:
+                        output["text"] += f"{player['username']} : Last joined 1 day ago."
+                    else:
+                        output["text"] += f"{player['username']} : Last joined {player['daysdif']} days ago."
+            if output["text"]:
+                output["text"] = discord.utils.escape_markdown(output["text"])
+                embed.add_field(name=output["rank"],value=output["text"],inline=False)
+
+            embed.set_footer(text=req)
+
+            await ctx.send(embed=embed)
+
+        except:
+            if guildsearch.lower() in guildlst:
+                guildsearched = guildlst[guildsearch.lower()]
+                if "|" in guildsearched:
+                    guildspot = guildsearched.split("|")
+                    gldpotlst = ""
+
+                    count = 1
+                    while count < len(guildspot):
+                        if gldpotlst == "":
+                            gldpotlst = f"{guildspot[count-1]} - {count}"
+                        else:
+                            gldpotlst += f"\n{guildspot[count-1]} - {count}"
+                        count += 1
+                    choosemessage = f'```There are multiple guilds with the prefix: "{guildsearch}". Please respond with the number corresponding to the intended guild, within the next 30 seconds. \n{gldpotlst}```'
+                    cmsg = await ctx.send(choosemessage)
+
+                    srvtrack[ctx.guild.id] = (guildspot, ctx.author.id, cmsg, "activity")
+
+                    await asyncio.sleep(30)
+                    try:
+                        await cmsg.delete()
+                        del srvtrack[ctx.guild.id]
+                    except:
+                        pass
+                else:
+                    try:
+                        guildstats = requests.get(f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guildsearched}", params=wynn_headers).json()
+
+                        members = guildstats["members"]
+
+                        total = len(members)
+                        count = 0
+
+                        req = "Please wait, this process may take a few minutes..."
+                        pmsg = f"0/{total} checks completed: 0.0% done."
+                        title = f"Guild Activity Progress - {guildsearched}"
+                        progress = discord.Embed(title=title, color=0xf5c242)
+
+                        progress.add_field(name="Checks Completed", value=pmsg, inline=True)
+                        progress.set_footer(text=req)
+
+                        pmessage = await ctx.send(embed=progress)
+
+                        memberslst = []
+                        last = 0
+
+                        rankselection = {"OWNER":1,"CHIEF":2,"STRATEGIST":3,"CAPTAIN":4,"RECRUITER":5,"RECRUIT":6}
+                        revrankselection = {1:"OWNER",2:"CHIEF",3:"STRATEGIST",4:"CAPTAIN",5:"RECRUITER",6:"RECRUIT"}
+
+                        for member in members:
+                            #member add
+                            username = member["name"]
+                            rank = member["rank"]
+                            uuid = member["uuid"]
+
+                            memberinfo = requests.get(f"https://api.wynncraft.com/v2/player/{uuid}/stats", params=wynn_headers).json()
+                            joingrab = memberinfo["data"][0]["meta"]["lastJoin"]
+                            lastjoin = joingrab.split("T")
+                            lastjoinobj = datetime.strptime(lastjoin[0], "%Y-%m-%d")
+                            currenttime = datetime.utcnow()
+                            indays = (currenttime - lastjoinobj).days
+
+                            member_data = {"username":username,"rank":rankselection[rank],"daysdif":indays}
+                            memberslst.append(member_data)
+
+                            count += 1
+
+                            if (count == last + 20) or (count + 3 > total):
+                                #embed update
+                                req = "Please wait, this process may take a few minutes..."
+                                perc = (count/total)*100
+                                pmsg = f"{count}/{total} checks completed: {perc:.1f}% done."
+                                title = f"Guild Activity Progress - {guildsearched}"
+                                newprogress = discord.Embed(title=title, color=0xf5c242)
+
+                                newprogress.add_field(name="Checks Completed", value=pmsg, inline=True)
+                                newprogress.set_footer(text=req)
+
+                                await pmessage.edit(embed=newprogress)
+                                last = count
+
+                        await asyncio.sleep(1)
+                        await pmessage.delete()
+
+                        memberslst.sort(key = lambda x: x['username'])
+                        memberslst.sort(key = lambda x: x["daysdif"],reverse=True)
+                        memberslst.sort(key = lambda x: x["rank"])
+
+                        req = "Requested by " + ctx.message.author.name + "."
+
+                        title = f"Guild Activity - {guildsearched}"
+                        #send message
+                        embed = discord.Embed(title=title, color=0x6edd67)
+
+                        output = {"rank":"","text":""}
+
+                        for player in memberslst:
+                            storedrank = player["rank"]
+                            rank = revrankselection[storedrank]
+                            if output["rank"] == rank: #same or lower rank
+                                if len(output["text"]) < 950:
+                                    if player['daysdif'] == 1:
+                                        output["text"] += f"\n{player['username']} : Last joined 1 day ago."
+                                    else:
+                                        output["text"] += f"\n{player['username']} : Last joined {player['daysdif']} days ago."
+                                else: #full
+                                    if output["text"]:
+                                        output["text"] = discord.utils.escape_markdown(output["text"])
+                                        embed.add_field(name=output["rank"],value=output["text"],inline=False)
+                                    output = {"rank":rank,"text":""}
+                                    if player['daysdif'] == 1:
+                                        output["text"] += f"{player['username']} : Last joined 1 day ago."
+                                    else:
+                                        output["text"] += f"{player['username']} : Last joined {player['daysdif']} days ago."
+                            else: #was higher rank
+                                if output["text"]:
+                                    output["text"] = discord.utils.escape_markdown(output["text"])
+                                    embed.add_field(name=output["rank"],value=output["text"],inline=False)
+                                output = {"rank":rank,"text":""}
+                                if player['daysdif'] == 1:
+                                    output["text"] += f"{player['username']} : Last joined 1 day ago."
+                                else:
+                                    output["text"] += f"{player['username']} : Last joined {player['daysdif']} days ago."
+                        if output["text"]:
+                            output["text"] = discord.utils.escape_markdown(output["text"])
+                            embed.add_field(name=output["rank"],value=output["text"],inline=False)
+
+                        embed.set_footer(text=req)
+
+                        await ctx.send(embed=embed)
+                    except:
+                        pass
+
+            else:
+                wmsg = f'No guilds were found with the name/prefix: "{guildsearch}".'
+                warn = discord.Embed(title="Error - Guild Not Found", color=0xeb1515)
+
+                warn.add_field(name="Error", value=wmsg, inline=True)
+
+                req = "Requested by " + ctx.message.author.name + "."
+                warn.set_footer(text=req)
+
+                await ctx.send(embed=warn)
             
 async def setup(bot):
     await bot.add_cog(PlaytimeUpdater(bot))

@@ -99,7 +99,9 @@ async def sync(
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
-EXTENSION_LIST = ["cogs.playtime", "cogs.serverstatus", "cogs.usersearch"]
+EXTENSION_LIST = [
+    "cogs.wynn_guildlist", "cogs.wynn_playtime", "cogs.serverstatus", "cogs.usersearch",
+]
 
 app = Quart(__name__)
 
