@@ -113,9 +113,9 @@ def starting_url():
     return status_code
 
 async def main():
+    await app.run_task(host='0.0.0.0', port=10000)
+
     async with bot:
-        start_quart_server = partial(app.run, host='0.0.0.0', port=10000)
-        await asyncio.get_event_loop().run_in_executor(ThreadPoolExecutor(), start_quart_server)
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
         await bot.start(config["DISCORD_BOT_TOKEN"])
