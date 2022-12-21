@@ -2,8 +2,6 @@
 import asyncio
 import os
 from typing import Literal, Optional
-from functools import partial
-from concurrent.futures import ThreadPoolExecutor
 
 import discord
 from discord.ext import commands
@@ -30,7 +28,6 @@ bot.remove_command("help")
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
-    await app.run_task(host='0.0.0.0', port=10000)
 
 # Bot Base Commands
 @bot.command()
@@ -75,16 +72,16 @@ async def sync(
   ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
     if not guilds:
         if spec == "~":
-            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            synced = await bot.tree.sync(guild=ctx.guild)
         elif spec == "*":
             ctx.bot.tree.copy_global_to(guild=ctx.guild)
-            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            synced = await bot.tree.sync(guild=ctx.guild)
         elif spec == "^":
-            ctx.bot.tree.clear_commands(guild=ctx.guild)
-            await ctx.bot.tree.sync(guild=ctx.guild)
+            bot.tree.clear_commands(guild=ctx.guild)
+            await bot.tree.sync(guild=ctx.guild)
             synced = []
         else:
-            synced = await ctx.bot.tree.sync()
+            synced = await bot.tree.sync()
 
         await ctx.send(
             f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
@@ -94,7 +91,7 @@ async def sync(
     ret = 0
     for guild in guilds:
         try:
-            await ctx.bot.tree.sync(guild=guild)
+            await bot.tree.sync(guild=guild)
         except discord.HTTPException:
             pass
         else:
@@ -117,6 +114,7 @@ async def main():
     async with bot:
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
+        bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
         await bot.start(config["DISCORD_BOT_TOKEN"])
 
 asyncio.run(main())
