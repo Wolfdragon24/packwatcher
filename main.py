@@ -2,10 +2,7 @@
 import asyncio
 import os
 from typing import Literal, Optional
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 
-import quart
 import discord
 from discord.ext import commands
 from discord.ext.commands import Greedy, Context
@@ -102,19 +99,11 @@ async def sync(
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 EXTENSION_LIST = [
-    "cogs.wynn_guildlist", "cogs.wynn_playtime", "cogs.serverstatus", "cogs.usersearch",
+    "cogs.wynn_guildlist", "cogs.wynn_playtime", "cogs.serverstatus", "cogs.usersearch", 
+    "cogs.quart_server",
 ]
 
-app = Quart(__name__)
-
-@app.route("/")
-def starting_url():
-    status_code = quart.Response(status=200)
-    return status_code
-
 async def main():
-    await app.run_task(host='0.0.0.0', port=10000)
-
     async with bot:
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
