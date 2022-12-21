@@ -3,6 +3,7 @@ import asyncio
 import os
 from typing import Literal, Optional
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 import quart
 import discord
@@ -113,7 +114,8 @@ def starting_url():
 
 async def main():
     async with bot:
-        await asyncio.get_event_loop().run_in_executor(ThreadPoolExecutor(), app.run, host='0.0.0.0', port=10000)
+        start_quart_server = partial(app.run, host='0.0.0.0', port=10000)
+        await asyncio.get_event_loop().run_in_executor(ThreadPoolExecutor(), start_quart_server)
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
         await bot.start(config["DISCORD_BOT_TOKEN"])
