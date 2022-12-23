@@ -20,7 +20,7 @@ from urllib3 import Retry
 from discord.ext import tasks, commands
 from pymongo import MongoClient
 
-import cogs.wynn_guildlist
+from cogs import wynn_guildlist
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -313,55 +313,6 @@ class PlaytimeUpdater(commands.Cog):
             await ctx.interaction.response.defer(ephemeral=True)
         requester = f"Requested by {ctx.author.name}."
 
-        if (ctx.author.id == BOT_OWNER or ctx.author.id in exclusive_users) and guild:
-            # Allowed users can set the guild for searching
-            if guild in guilds_to_check:
-                guild_prefix = guilds_to_check[guild][1]
-            elif guild in [to_check[1] for to_check in guilds_to_check]:
-                guild_prefix = guild
-            elif ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
-                guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
-            else:
-                #Errors
-                error_embed_dict = {
-                    "title": "Error - Playtime",
-                    "footer": {
-                        "text": requester
-                    },
-                    "color": ERROR_HEX,
-                    "fields": [
-                        {
-                            "name": "Invalid Guild Input",
-                            "value": "The inputted guild was not found and the current server does not correspond to a linked guild, please try again."
-                        }
-                    ]
-                }
-
-                await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
-                return
-        elif ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
-            # Defaults to reflect current guild
-            guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
-        else:
-            #Errors
-            error_embed_dict = {
-                "title": "Error - Playtime",
-                "footer": {
-                    "text": requester
-                },
-                "color": ERROR_HEX,
-                "fields": [
-                    {
-                        "name": "Invalid Guild Input",
-                        "value": "The current server does not correspond to a linked guild, please try again in another server."
-                    }
-                ]
-            }
-
-            await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
-            return
-
-        #Gathers requested data
         if form == "help":
             # Display a help embed then return
             help_embed_dict = {
@@ -400,6 +351,55 @@ class PlaytimeUpdater(commands.Cog):
             await ctx.send(embed=discord.Embed.from_dict(help_embed_dict))
             return
 
+        if (ctx.author.id == BOT_OWNER or ctx.author.id in exclusive_users) and guild:
+            # Allowed users can set the guild for searching
+            if guild in guilds_to_check:
+                guild_prefix = guilds_to_check[guild][1]
+            elif guild in [to_check[1] for to_check in guilds_to_check]:
+                guild_prefix = guild
+            elif ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
+                guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
+            else:
+                #Errors
+                error_embed_dict = {
+                    "title": "Error - Playtime",
+                    "footer": {
+                        "text": requester
+                    },
+                    "color": ERROR_HEX,
+                    "fields": [
+                        {
+                            "name": "Invalid Guild Input",
+                            "value": "The inputted guild was not found and the current server does not correspond to a linked guild, please try again."
+                        }
+                    ]
+                }
+
+                await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
+                return
+        elif ctx.guild and ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
+            # Defaults to reflect current guild
+            guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
+        else:
+            #Errors
+            error_embed_dict = {
+                "title": "Error - Playtime",
+                "footer": {
+                    "text": requester
+                },
+                "color": ERROR_HEX,
+                "fields": [
+                    {
+                        "name": "Invalid Guild Input",
+                        "value": "The current server does not correspond to a linked guild, please try again in another server."
+                    }
+                ]
+            }
+
+            await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
+            return
+
+        # Gathers required data using form argument
         if form == "from":
             # Fetch data between given dates
             if not data or "-" not in data:

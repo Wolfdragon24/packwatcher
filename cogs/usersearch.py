@@ -37,10 +37,10 @@ class UserSearch(commands.Cog):
             await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
             return
         
-        cleaned_username = discord.utils.escape_markdown(request_data.data.player.username)
-        uuid = request_data.data.player.raw_id
-        formatted_uuid = request_data.data.player.id
-        avatar = request_data.data.avatar
+        cleaned_username = discord.utils.escape_markdown(request_data["data"]["player"]["username"])
+        uuid = request_data["data"]["player"]["raw_id"]
+        formatted_uuid = request_data["data"]["player"]["id"]
+        avatar = request_data["data"]["avatar"]
 
         success_embed_dict = {
             "title": f"User Search - '{cleaned_username}'",

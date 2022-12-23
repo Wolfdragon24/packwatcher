@@ -40,7 +40,9 @@ async def invite(ctx: Context):
     embed_object = {
         "title": "Invite",
         "color": 0xa9e88b,
-        "footer": f"Requested by {ctx.message.author.name}.",
+        "footer": {
+            "text": f"Requested by {ctx.message.author.name}."
+        },
         "fields": [{
             "name": "Bot Invite",
             "value": "You can invite me to any server by clicking [here](https://discord.com/api/oauth2/authorize?client_id=606829493193277441&permissions=8&scope=bot)",
@@ -61,7 +63,9 @@ async def help(ctx: Context):
     embed_object = {
         "title": "Help Menu",
         "color": 0xa9e88b,
-        "footer": f"Requested by {ctx.message.author.name}.",
+        "footer": {
+            "text": f"Requested by {ctx.message.author.name}."
+        },
         "fields": [],
     }
 
@@ -74,7 +78,7 @@ async def sync(
         if spec == "~":
             synced = await bot.tree.sync(guild=ctx.guild)
         elif spec == "*":
-            ctx.bot.tree.copy_global_to(guild=ctx.guild)
+            bot.tree.copy_global_to(guild=ctx.guild)
             synced = await bot.tree.sync(guild=ctx.guild)
         elif spec == "^":
             bot.tree.clear_commands(guild=ctx.guild)
@@ -114,7 +118,7 @@ async def main():
     async with bot:
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
-        bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
+        #bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
         await bot.start(config["DISCORD_BOT_TOKEN"])
 
 asyncio.run(main())
