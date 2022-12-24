@@ -20,7 +20,7 @@ from urllib3 import Retry
 from discord.ext import tasks, commands
 from pymongo import MongoClient
 
-from cogs import wynn_guildlist
+import global_vars
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -72,8 +72,6 @@ try:
     exclusive_users = settings["exclusers"]
 except KeyError:
     exclusive_users = []
-
-srvtrack = {}
 
 def rank_select(value):
     rankselection = {"OWNER":1,"CHIEF":2,"STRATEGIST":3,"CAPTAIN":4,"RECRUITER":5,"RECRUIT":6,"NOT IN GUILD":7}
@@ -772,9 +770,9 @@ class PlaytimeUpdater(commands.Cog):
 
         req = f"Requested by {ctx.author.name}."
 
-        guildlst = wynn_guildlist.guild_list
+        guildlst = global_vars.guild_list
         guildsearch = " ".join(guildcheck)
-        global srvtrack
+        srvtrack = global_vars.srvtrack
 
         try:
             guildstats = requests.get(f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guildsearch}", params=wynn_headers).json()

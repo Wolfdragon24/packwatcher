@@ -2,12 +2,16 @@
 import asyncio
 import os
 import time
+import json
+import ast
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
 import discord
 from discord.ext import commands, tasks
 from dotenv import dotenv_values
+
+import global_vars
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -31,8 +35,6 @@ PASTE_NAME = "Guild List"
 paste_headers = {'X-Auth-Token': USER_KEY}
 wynn_headers = {"apikey": WYNN_TOKEN}
 
-guild_list = {}
-
 def get_key(title):
     request = requests.get(PASTEE_BASE_URL, headers=paste_headers, timeout=5)
     if request.status_code != 200:
@@ -46,8 +48,26 @@ def get_key(title):
     send = requests.post(PASTEE_BASE_URL, json=payload, headers=paste_headers, timeout=5).json()
     return send["id"]
 
+def paste_fetch(title):
+    key = get_key(title)
+
+    request = requests.get(f"{PASTEE_BASE_URL}/{key}", headers=paste_headers, timeout=5)
+    if request.status_code != 200:
+        pass
+    paste_data = request.text
+    loaded = json.loads(paste_data.replace("\'","\""))
+    data = loaded["paste"]["sections"][0]["contents"]
+    try:
+        data = json.loads(data)
+    except json.decoder.JSONDecodeError:
+        data = ast.literal_eval(data)
+    return data
+
+if not global_vars.guild_list:
+    global_vars.guild_list = paste_fetch(PASTE_NAME)
+
 def guild_list_update():
-    global guild_list
+    guild_list = global_vars.guild_list
 
     key = get_key(PASTE_NAME)
 

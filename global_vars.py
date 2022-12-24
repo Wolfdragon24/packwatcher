@@ -1,0 +1,2 @@
+guild_list = {}
+srvtrack = {}
