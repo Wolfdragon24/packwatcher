@@ -2,6 +2,7 @@
 import asyncio
 import os
 from typing import Literal, Optional
+import logging
 
 import discord
 from discord.ext import commands
@@ -20,6 +21,7 @@ config = {
 }
 
 intents = discord.Intents.all()
+handler = logging.FileHandler(filename='bot.log', encoding='utf-8')
 
 bot = commands.Bot(command_prefix=".", intents=intents)
 bot.remove_command("help")
@@ -105,6 +107,7 @@ async def sync(
 
 EXTENSION_LIST = [
     "cogs.wynn_guildlist", "cogs.wynn_playtime", "cogs.serverstatus", "cogs.usersearch",
+    "cogs.owner"
 ]
 
 app = Quart(__name__)
