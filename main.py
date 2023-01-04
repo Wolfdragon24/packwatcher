@@ -121,7 +121,7 @@ async def main():
     async with bot:
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
-        #bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
+        bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
         await bot.start(config["DISCORD_BOT_TOKEN"])
 
 asyncio.run(main())
