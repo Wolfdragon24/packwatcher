@@ -140,7 +140,7 @@ def str_to_int(string: str, positive: bool = False):
 
 def prefix_to_name(prefix: str):
     for guild in guilds_to_check:
-        if prefix == guilds_to_check[guild][0]:
+        if prefix == guilds_to_check[guild][1]:
             return guild
     return None
 
@@ -155,6 +155,14 @@ class PlaytimeUpdater(commands.Cog):
 
         self.playtime_file = None
         self.members_file = None
+
+        #Fetches data if not present
+        if not self.stored_playtime:
+            self.playtime_file, self.stored_playtime = get_repo_data(PLAYTIME_GIT)     
+        if not self.stored_changing:
+            self.stored_changing = paste_fetch(PASTE_NAME)
+        if not self.stored_members:
+            self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
 
         self.run_playtime_update.start()
 
@@ -353,10 +361,10 @@ class PlaytimeUpdater(commands.Cog):
             # Allowed users can set the guild for searching
             if guild in guilds_to_check:
                 guild_prefix = guilds_to_check[guild][1]
-            elif guild in [to_check[1] for to_check in guilds_to_check]:
+            elif guild in [guilds_to_check[to_check][1] for to_check in guilds_to_check]:
                 guild_prefix = guild
-            elif ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
-                guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
+            elif ctx.guild.id in [guilds_to_check[to_check][0] for to_check in guilds_to_check]:
+                guild_prefix = next(to_check[1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
             else:
                 #Errors
                 error_embed_dict = {
@@ -375,9 +383,9 @@ class PlaytimeUpdater(commands.Cog):
 
                 await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
                 return
-        elif ctx.guild and ctx.guild.id in [to_check[0] for to_check in guilds_to_check]:
+        elif ctx.guild and ctx.guild.id in [guilds_to_check[to_check][0] for to_check in guilds_to_check]:
             # Defaults to reflect current guild
-            guild_prefix = next(to_check[1] for to_check in guilds_to_check if to_check[0] == ctx.guild.id)
+            guild_prefix = next(to_check[1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
         else:
             #Errors
             error_embed_dict = {
@@ -580,7 +588,7 @@ class PlaytimeUpdater(commands.Cog):
             end_time = datetime.max
 
         # Gets all data sets between the given times
-        data_sets = []
+        data_sets = {}
         for time_value in self.stored_playtime:
             datetime_object = datetime.strptime(time_value, "%H-%d/%m/%y")
             if start_time < datetime_object < end_time:
@@ -589,14 +597,16 @@ class PlaytimeUpdater(commands.Cog):
         request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={prefix_to_name(guild_prefix)}", params=wynn_headers, timeout=5)
         guild_data = request.json()
 
-        active_members = [member["uuid"] for member in guild_data["members"]]
+        active_members = [str(member["uuid"]).replace("-","") for member in guild_data["members"]]
 
         playtime_stats = {}
-        
-        for time_value in data_sets:         
-            for user_set in data_sets[time_value]:
-                if (members == "all" and user_set["guild"] == guild_prefix) or (members != "all" and user_set["uuid"] in active_members):
-                    playtime_stats[user_set["uuid"]] = user_set["duration"] if user_set["uuid"] not in playtime_stats else (playtime_stats[user_set["uuid"]] + user_set["duration"])
+
+        for time_set in enumerate(data_sets.items()):
+            user_sets = time_set[1][1]
+            for user_set in user_sets:
+                uuid = user_set["uuid"]
+                if (members == "all" and user_set["guild"] == guild_prefix) or (members != "all" and uuid in active_members):
+                    playtime_stats[uuid] = user_set["duration"] if uuid not in playtime_stats else (playtime_stats[uuid] + user_set["duration"])
 
         for member_uuid in active_members:
             if member_uuid not in playtime_stats:
@@ -619,18 +629,24 @@ class PlaytimeUpdater(commands.Cog):
 
         for i in enumerate(playtime_stats.items()):
             count += 1
+            print(count)
 
             player = i[1][0]
             total_playtime = i[1][1]
             request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=5)
             if request.status_code != 200:
                 continue
+            print("valid req")
             player_data = request.json()
-            if player_data["status"] == "ERR":
+            if player_data["raw"]["status"] == "ERR":
                 continue
+            print("fetched valid data")
             username = player_data["raw"]["name"]
-            rank = rank_select(next(data_set for data_set in guild_data["members"] if data_set["uuid"] == player)["rank"])
+            print("got username")
+            rank = rank_select(next(data_set for data_set in guild_data["members"] if str(data_set["uuid"]).replace("-", "") == player)["rank"])
+            print("got rank")
             publishable_stats.append({"name": username, "total": total_playtime, "rank": rank})
+            print("appended to data")
 
             if (count == last + 20) or (count + 3 > total):
                 #embed update

@@ -135,12 +135,13 @@ class OwnerCommands(commands.Cog):
         print("Process Memory Check: Waiting...")
         await self.bot.wait_until_ready()
 
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=1)
     async def bot_logging(self):
         log_channel = self.bot.get_channel(1056035790762815539)
 
-        await log_channel.send(file=MAIN_LOG_POS)
-        os.remove(MAIN_LOG_POS)
+        if os.path.getsize(MAIN_LOG_POS) > 0:
+            await log_channel.send(file=discord.File(MAIN_LOG_POS))
+            os.remove(MAIN_LOG_POS)
 
     @bot_logging.before_loop
     async def before_bot_logging(self):
