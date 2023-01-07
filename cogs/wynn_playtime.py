@@ -432,6 +432,7 @@ class PlaytimeUpdater(commands.Cog):
                 try:
                     start_time = datetime.min
                     end_time = datetime.strptime(date_str, "%d/%m/%y")
+                    title = f"{guild_prefix} Playtime - From {date_str}"
                 except ValueError:
                     error_embed_dict = {
                         "title": "Error - Playtime",
@@ -455,6 +456,7 @@ class PlaytimeUpdater(commands.Cog):
                 try:
                     end_time = datetime.max
                     start_time = datetime.strptime(date_str, "%d/%m/%y")
+                    title = f"{guild_prefix} Playtime - Till {date_str}"
                 except ValueError:
                     error_embed_dict = {
                         "title": "Error - Playtime",
@@ -477,6 +479,7 @@ class PlaytimeUpdater(commands.Cog):
                 try:
                     start_time = datetime.strptime(date_strs[0], "%d/%m/%y")
                     end_time = datetime.strptime(date_strs[1], "%d/%m/%y")
+                    title = f"{guild_prefix} Playtime - From {date_strs[0]} to {date_strs[1]}"
                 except ValueError:
                     error_embed_dict = {
                         "title": "Error - Playtime",
@@ -516,6 +519,7 @@ class PlaytimeUpdater(commands.Cog):
                 return
             start_time = datetime.now() - timedelta(days=(30 * num))
             end_time = datetime.max
+            title = f"{guild_prefix} Playtime - {num} Months"
         elif form == "w":
             # Fetch data from some amount of weeks ago
             num = str_to_int(data, True)
@@ -538,6 +542,7 @@ class PlaytimeUpdater(commands.Cog):
                 return
             start_time = datetime.now() - timedelta(weeks=num)
             end_time = datetime.max
+            title = f"{guild_prefix} Playtime - From {num} Weeks"
         elif form == "d":
             # Fetch data from some amount of days ago
             num = str_to_int(data, True)
@@ -560,6 +565,7 @@ class PlaytimeUpdater(commands.Cog):
                 return
             start_time = datetime.now() - timedelta(days=num)
             end_time = datetime.max
+            title = f"{guild_prefix} Playtime - From {num} Days"
         elif form == "h":
             # Fetch data from some amount of days ago
             num = str_to_int(data, True)
@@ -582,10 +588,12 @@ class PlaytimeUpdater(commands.Cog):
                 return
             start_time = datetime.now() - timedelta(hours=num)
             end_time = datetime.max
+            title = f"{guild_prefix} Playtime - From {num} Hours"
         else:
             # Fetch data from all time with current members
             start_time = datetime.min
             end_time = datetime.max
+            title = f"{guild_prefix} Playtime - All"
 
         # Gets all data sets between the given times
         data_sets = {}
@@ -619,8 +627,8 @@ class PlaytimeUpdater(commands.Cog):
 
         req = "Please wait, this process may take a few minutes..."
         pmsg = f"0/{total} checks completed: 0.0% done."
-        title = f"Guild Activity Progress - {guild_prefix}"
-        progress = discord.Embed(title=title, color=0xf5c242)
+        prg_title = f"Playtime Check Progress - {guild_prefix}"
+        progress = discord.Embed(title=prg_title, color=0xf5c242)
 
         progress.add_field(name="Checks Completed", value=pmsg, inline=True)
         progress.set_footer(text=req)
@@ -629,32 +637,25 @@ class PlaytimeUpdater(commands.Cog):
 
         for i in enumerate(playtime_stats.items()):
             count += 1
-            print(count)
 
             player = i[1][0]
             total_playtime = i[1][1]
             request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=5)
             if request.status_code != 200:
                 continue
-            print("valid req")
             player_data = request.json()
             if player_data["raw"]["status"] == "ERR":
                 continue
-            print("fetched valid data")
             username = player_data["raw"]["name"]
-            print("got username")
             rank = rank_select(next(data_set for data_set in guild_data["members"] if str(data_set["uuid"]).replace("-", "") == player)["rank"])
-            print("got rank")
             publishable_stats.append({"name": username, "total": total_playtime, "rank": rank})
-            print("appended to data")
 
             if (count == last + 20) or (count + 3 > total):
                 #embed update
                 req = "Please wait, this process may take a few minutes..."
                 perc = (count/len(playtime_stats))*100
                 pmsg = f"{count}/{total} checks completed: {perc:.1f}% done."
-                title = f"Playtime Check Progress - {guild_prefix}"
-                newprogress = discord.Embed(title=title, color=0xf5c242)
+                newprogress = discord.Embed(title=prg_title, color=0xf5c242)
 
                 newprogress.add_field(name="Checks Completed", value=pmsg, inline=True)
                 newprogress.set_footer(text=req)
@@ -686,7 +687,7 @@ class PlaytimeUpdater(commands.Cog):
 
             await ctx.send(embed=discord.Embed.from_dict(error_embed_dict))
             return
-        
+
         #send message
         embed = discord.Embed(title=title, color=SUCCESS_HEX)
 
