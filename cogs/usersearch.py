@@ -40,7 +40,7 @@ class UserSearch(commands.Cog):
         cleaned_username = discord.utils.escape_markdown(request_data["data"]["player"]["username"])
         uuid = request_data["data"]["player"]["raw_id"]
         formatted_uuid = request_data["data"]["player"]["id"]
-        avatar = request_data["data"]["avatar"]
+        avatar = request_data["data"]["player"]["avatar"]
 
         success_embed_dict = {
             "title": f"User Search - '{cleaned_username}'",
