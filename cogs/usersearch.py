@@ -43,9 +43,9 @@ class UserSearch(commands.Cog):
         avatar = request_data["data"]["player"]["avatar"]
 
         success_embed_dict = {
-            "title": f"User Search - '{cleaned_username}'",
+            "title": f"User Search - {cleaned_username}",
             "url": f"https://namemc.com/search?q={search}",
-            "image": {
+            "thumbnail": {
                 "url": avatar
             },
             "footer": {
@@ -60,11 +60,13 @@ class UserSearch(commands.Cog):
                 },
                 {
                     "name": "Formatted UUID",
-                    "value": formatted_uuid
+                    "value": formatted_uuid,
+                    "inline": True
                 },
                 {
                     "name": "UUID",
-                    "value": uuid
+                    "value": uuid,
+                    "inline": True
                 }
             ]
         }

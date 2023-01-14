@@ -1,5 +1,7 @@
 import os
 import socket
+import io
+import base64
 from urllib.parse import quote_plus
 
 import discord
@@ -100,11 +102,13 @@ class ServerStatus(commands.Cog):
                 "fields": [
                     {
                         "name": "Server IP",
-                        "value": server_ip
+                        "value": server_ip,
+                        "inline": True
                     },
                     {
                         "name": "Status",
-                        "value": 'Server is currently offline!'
+                        "value": 'Server is currently offline!',
+                        "inline": True
                     }
                 ]
             }
@@ -123,8 +127,14 @@ class ServerStatus(commands.Cog):
         version_raw = info.version.name
         version = " ".join([string for string in version_raw.split(" ") if not string.isalpha()])
 
+        favicon_str = info.favicon.split(',')[1]
+        favicon = discord.File(io.BytesIO(base64.b64decode(favicon_str)), filename="favicon.png")
+
         online_embed_dict = {
             "title": "Server Status",
+            "thumbnail": {
+                "url": "attachment://favicon.png"
+            },
             "footer": {
                 "text": requester
             },
@@ -159,7 +169,7 @@ class ServerStatus(commands.Cog):
                 "value": discord.utils.escape_markdown(", ".join([player.name for player in info.players.sample]))
             })
 
-        await ctx.send(embed=discord.Embed.from_dict(online_embed_dict))
+        await ctx.send(file=favicon, embed=discord.Embed.from_dict(online_embed_dict))
 
     @commands.hybrid_command(name="setdefault")
     async def setdefault(self, ctx: commands.Context, server_ip: str) -> None:
