@@ -25,11 +25,13 @@ import time
 import urllib
 import random
 import psutil
+from datetime import datetime
+from urllib.parse import quote_plus
 
 from dotenv import dotenv_values
 from discord.ext import commands, tasks
-from datetime import datetime
 from pytz import timezone
+from pymongo import MongoClient
 
 import global_vars
 
@@ -47,6 +49,14 @@ config = {
 
 # Constants
 BOT_OWNER = int(config["BOT_OWNER"])
+MONGO_USER = quote_plus(config["MONGODB_USER"])
+MONGO_PW = quote_plus(config["MONGODB_PASSWORD"])
+MONGO_URL = config["MONGODB_URL"]
+
+cluster = MongoClient(f"mongodb+srv://{MONGO_USER}:{MONGO_PW}@{MONGO_URL}")
+db = cluster["discordbot"]
+settings = db["settings"]
+saved_settings = list(settings.find())
 
 tracemalloc.start()
 
@@ -57,6 +67,11 @@ class OwnerCommands(commands.Cog):
             self.memory_check.start()
             self.process_mem_check.start()
             self.bot_logging.start()
+
+        try:
+            global_vars.exclusive_users = saved_settings[0]["exclusers"]
+        except:
+            pass
 
     @commands.command()
     async def logmemd(self, ctx):
@@ -486,6 +501,42 @@ class OwnerCommands(commands.Cog):
                     outchnls = "```"
             outchnls += "```"
             await ctx.send(outchnls)
+
+    @commands.command()
+    async def exclusive(self, ctx, *args):
+
+        if ctx.author.id == BOT_OWNER:
+            try:
+                await ctx.message.delete()
+            except:
+                pass
+
+            embed = discord.Embed(title="Exclusive Users", color=0xf5c242)
+
+            if args[0] == "add":
+                if len(args) > 1:
+                    userid = args[1]
+                    global_vars.exclusive_users.append(userid)
+                    wmsg = f'Appended user {userid} to exclusive users.'
+                    settings.update_one({"scope":"global"}, {"$set": {"exclusers":global_vars.exclusive_users}})
+                else:
+                    wmsg = 'Please input a user to append to exclusive users. .exclusive add <User ID>'
+
+            elif args[0] == "list":
+                users = ", ".join(global_vars.exclusive_users)
+                wmsg = f"Current Users in exclusive users: {users}"
+            elif args[0] == "remove":
+                if len(args) > 1:
+                    userid = args[1]
+                    global_vars.exclusive_users.remove(userid)
+                    wmsg = f'Removed user {userid} from exclusive users.'
+                    settings.update_one({"scope":"global"}, {"$set": {"exclusers":global_vars.exclusive_users}})
+                else:
+                    wmsg = 'Please input a user to remove from exclusive users. .exclusive remove <User ID>'
+
+            embed.add_field(name="Change", value=wmsg, inline=True)
+
+            await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(OwnerCommands(bot))
