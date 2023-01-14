@@ -365,7 +365,7 @@ class PlaytimeUpdater(commands.Cog):
             elif guild in [guilds_to_check[to_check][1] for to_check in guilds_to_check]:
                 guild_prefix = guild
             elif ctx.guild.id in [guilds_to_check[to_check][0] for to_check in guilds_to_check]:
-                guild_prefix = next(to_check[1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
+                guild_prefix = next(guilds_to_check[to_check][1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
             else:
                 #Errors
                 error_embed_dict = {
@@ -386,7 +386,7 @@ class PlaytimeUpdater(commands.Cog):
                 return
         elif ctx.guild and ctx.guild.id in [guilds_to_check[to_check][0] for to_check in guilds_to_check]:
             # Defaults to reflect current guild
-            guild_prefix = next(to_check[1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
+            guild_prefix = next(guilds_to_check[to_check][1] for to_check in guilds_to_check if guilds_to_check[to_check][0] == ctx.guild.id)
         else:
             #Errors
             error_embed_dict = {
