@@ -3,13 +3,17 @@ import asyncio
 import os
 from typing import Literal, Optional
 import logging
+import re
+import traceback
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import Greedy, Context
+from discord.ext.commands import Greedy, Context, CommandNotFound
 from dotenv import dotenv_values
 import quart
 from quart import Quart
+
+import global_vars
 
 # Bot Setup
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -105,9 +109,33 @@ async def sync(
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
+@bot.event
+async def on_command_error(ctx, error):
+    if global_vars.dev_mode:
+        print(error)
+    ignores = {
+            121,    # the semaphore timeout period has expired
+        }
+    if (isinstance(error, CommandNotFound)) or (isinstance(error, OSError) and error in ignores):
+        return
+
+    errorchannel = bot.get_channel(837917735089340446)
+    embed = discord.Embed(title="PackWatcher Error", color=0xeb1515)
+
+    embed.add_field(name="Error",value="An error occurred in typical operation.")
+
+    req = "Automated Error Logging."
+    embed.set_footer(text=req)
+
+    error = re.sub(r'"(.*)"', "", traceback.format_exc(), 1)
+    ertext = f"```{error}```"
+
+    await errorchannel.send(embed=embed)
+    await errorchannel.send(ertext)
+
 EXTENSION_LIST = [
     "cogs.wynn_guildlist", "cogs.wynn_playtime", "cogs.serverstatus", "cogs.usersearch",
-    "cogs.owner"
+    "cogs.hypixelmodule", "cogs.owner"
 ]
 
 app = Quart(__name__)
@@ -121,7 +149,8 @@ async def main():
     async with bot:
         for extension in EXTENSION_LIST:
             await bot.load_extension(extension)
-        bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
+        if not global_vars.dev_mode:
+            bot.loop.create_task(app.run_task(host='0.0.0.0', port=10000))
         await bot.start(config["DISCORD_BOT_TOKEN"])
 
 asyncio.run(main())

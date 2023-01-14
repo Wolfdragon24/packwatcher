@@ -64,7 +64,10 @@ def paste_fetch(title):
     return data
 
 if not global_vars.guild_list:
-    global_vars.guild_list = paste_fetch(PASTE_NAME)
+    try:
+        global_vars.guild_list = paste_fetch(PASTE_NAME)
+    except:
+        pass
 
 def guild_list_update():
     guild_list = global_vars.guild_list
@@ -101,7 +104,8 @@ class GuildListUpdater(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.run_playtime_update.start()
+        if not global_vars.dev_mode:
+            self.run_playtime_update.start()
 
     async def cog_unload(self):
         self.run_playtime_update.cancel()

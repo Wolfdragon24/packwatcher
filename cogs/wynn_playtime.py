@@ -164,7 +164,8 @@ class PlaytimeUpdater(commands.Cog):
         if not self.stored_members:
             self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
 
-        self.run_playtime_update.start()
+        if not global_vars.dev_mode:
+            self.run_playtime_update.start()
 
     async def cog_unload(self):
         self.run_playtime_update.cancel()

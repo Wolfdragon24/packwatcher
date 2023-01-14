@@ -31,6 +31,8 @@ from discord.ext import commands, tasks
 from datetime import datetime
 from pytz import timezone
 
+import global_vars
+
 tzone = timezone("Australia/Sydney")
 
 # Bot Setup
@@ -51,9 +53,10 @@ tracemalloc.start()
 class OwnerCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.memory_check.start()
-        self.process_mem_check.start()
-        self.bot_logging.start()
+        if not global_vars.dev_mode:
+            self.memory_check.start()
+            self.process_mem_check.start()
+            self.bot_logging.start()
 
     @commands.command()
     async def logmemd(self, ctx):
