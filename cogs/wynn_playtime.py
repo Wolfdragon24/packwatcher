@@ -68,10 +68,6 @@ db = cluster["discordbot"]
 settings = [*db["settings"].find()][0]
 
 guilds_to_check = json.loads(config["GUILDS"])
-try:
-    exclusive_users = settings["exclusers"]
-except KeyError:
-    exclusive_users = []
 
 def rank_select(value):
     rankselection = {"OWNER":1,"CHIEF":2,"STRATEGIST":3,"CAPTAIN":4,"RECRUITER":5,"RECRUIT":6,"NOT IN GUILD":7}
@@ -358,7 +354,7 @@ class PlaytimeUpdater(commands.Cog):
             await ctx.send(embed=discord.Embed.from_dict(help_embed_dict))
             return
 
-        if (ctx.author.id == BOT_OWNER or ctx.author.id in exclusive_users) and guild:
+        if (ctx.author.id == BOT_OWNER or ctx.author.id in global_vars.exclusive_users) and guild:
             # Allowed users can set the guild for searching
             if guild in guilds_to_check:
                 guild_prefix = guilds_to_check[guild][1]
