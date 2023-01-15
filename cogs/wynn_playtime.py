@@ -84,7 +84,7 @@ def get_index(lst, key, value):
     return None
 
 def get_key(title):
-    request = requests.get(PASTEE_BASE_URL, headers=paste_headers, timeout=5)
+    request = requests.get(PASTEE_BASE_URL, headers=paste_headers, timeout=10)
     if request.status_code != 200:
         pass
     paste_lst = request.json()
@@ -93,13 +93,13 @@ def get_key(title):
             return paste["id"]
 
     payload = {"description": title, "expiration": "31536000", "sections": [{"contents": str({})}]}
-    send = requests.post(PASTEE_BASE_URL, json=payload, headers=paste_headers, timeout=5).json()
+    send = requests.post(PASTEE_BASE_URL, json=payload, headers=paste_headers, timeout=10).json()
     return send["id"]
 
 def paste_fetch(title):
     key = get_key(title)
 
-    request = requests.get(f"{PASTEE_BASE_URL}/{key}", headers=paste_headers, timeout=5)
+    request = requests.get(f"{PASTEE_BASE_URL}/{key}", headers=paste_headers, timeout=10)
     if request.status_code != 200:
         pass
     paste_data = request.text
@@ -153,12 +153,21 @@ class PlaytimeUpdater(commands.Cog):
         self.members_file = None
 
         #Fetches data if not present
-        if not self.stored_playtime:
-            self.playtime_file, self.stored_playtime = get_repo_data(PLAYTIME_GIT)     
-        if not self.stored_changing:
-            self.stored_changing = paste_fetch(PASTE_NAME)
-        if not self.stored_members:
-            self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
+        try:
+            if not self.stored_playtime:
+                self.playtime_file, self.stored_playtime = get_repo_data(PLAYTIME_GIT)
+        except:
+            pass
+        try:
+            if not self.stored_changing:
+                self.stored_changing = paste_fetch(PASTE_NAME)
+        except:
+            pass
+        try:
+            if not self.stored_members:
+                self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
+        except:
+            pass
 
         if not global_vars.dev_mode:
             self.run_playtime_update.start()
@@ -181,7 +190,7 @@ class PlaytimeUpdater(commands.Cog):
         all_players = []
 
         #gets list of all players online
-        request = requests.get(WYNN_ONLINE_PLAYERS_URL, params=wynn_headers, timeout=5)
+        request = requests.get(WYNN_ONLINE_PLAYERS_URL, params=wynn_headers, timeout=10)
 
         if request.status_code != 200:
             return
@@ -219,7 +228,7 @@ class PlaytimeUpdater(commands.Cog):
 
             #update pastes
             ckey = get_key(PASTE_NAME)
-            requests.delete(f"{PASTEE_BASE_URL}/{ckey}", headers=paste_headers, timeout=5)
+            requests.delete(f"{PASTEE_BASE_URL}/{ckey}", headers=paste_headers, timeout=10)
 
             changing_payload = {
                 "description": PASTE_NAME,
@@ -228,7 +237,7 @@ class PlaytimeUpdater(commands.Cog):
                     {"contents": str(self.stored_changing).replace("\'","\"")}
                 ]
             }
-            requests.post(PASTEE_BASE_URL, json=changing_payload, headers=paste_headers, timeout=5)
+            requests.post(PASTEE_BASE_URL, json=changing_payload, headers=paste_headers, timeout=10)
 
             if not self.stored_playtime or self.stored_playtime != old_stored:
                 if self.playtime_file:
@@ -258,7 +267,7 @@ class PlaytimeUpdater(commands.Cog):
         guild_players_id = {}
 
         for guild in guild_names:
-            request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={guild}", params=wynn_headers, timeout=5)
+            request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={guild}", params=wynn_headers, timeout=10)
             if request.status_code != 200:
                 continue
             data = request.json()
@@ -268,7 +277,7 @@ class PlaytimeUpdater(commands.Cog):
             guild_players_id[prefix] = [member["uuid"] for member in data["members"]]
 
             for player in guild_players_id[prefix]:
-                request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=5)
+                request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=10)
                 if request.status_code != 200:
                     continue
                 player_data = request.json()
@@ -286,7 +295,7 @@ class PlaytimeUpdater(commands.Cog):
                 if text_time not in self.stored_playtime:
                     self.stored_playtime[text_time] = []
 
-                request = requests.get(f"{MINETOOLS_UUID_API}/{player}", timeout=5)
+                request = requests.get(f"{MINETOOLS_UUID_API}/{player}", timeout=10)
                 if request.status_code != 200:
                     continue
                 data = request.json()
@@ -599,7 +608,7 @@ class PlaytimeUpdater(commands.Cog):
             if start_time < datetime_object < end_time:
                 data_sets[time_value] = self.stored_playtime[time_value]
 
-        request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={prefix_to_name(guild_prefix)}", params=wynn_headers, timeout=5)
+        request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={prefix_to_name(guild_prefix)}", params=wynn_headers, timeout=10)
         guild_data = request.json()
 
         active_members = [str(member["uuid"]).replace("-","") for member in guild_data["members"]]
@@ -637,7 +646,7 @@ class PlaytimeUpdater(commands.Cog):
 
             player = i[1][0]
             total_playtime = i[1][1]
-            request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=5)
+            request = requests.get(f"{MINETOOLS_PROFILE_API}/{player}", timeout=10)
             if request.status_code != 200:
                 continue
             player_data = request.json()
