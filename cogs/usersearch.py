@@ -16,7 +16,7 @@ class UserSearch(commands.Cog):
             await ctx.interaction.response.defer(ephemeral=True)
         requester = f"Requested by {ctx.author.name}."
 
-        request = requests.get(f"{PLAYERDB_MINECRAFT_API}{search}", timeout=5)
+        request = requests.get(f"{PLAYERDB_MINECRAFT_API}{search}", timeout=10)
         request_data = request.json()
 
         if (request.status_code != requests.codes['ok']):

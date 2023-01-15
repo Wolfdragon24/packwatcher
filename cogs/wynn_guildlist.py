@@ -36,7 +36,7 @@ paste_headers = {'X-Auth-Token': USER_KEY}
 wynn_headers = {"apikey": WYNN_TOKEN}
 
 def get_key(title):
-    request = requests.get(PASTEE_BASE_URL, headers=paste_headers, timeout=5)
+    request = requests.get(PASTEE_BASE_URL, headers=paste_headers, timeout=10)
     if request.status_code != 200:
         pass
     paste_lst = request.json()
@@ -45,13 +45,13 @@ def get_key(title):
             return paste["id"]
 
     payload = {"description": title, "expiration": "31536000", "sections": [{"contents": str({})}]}
-    send = requests.post(PASTEE_BASE_URL, json=payload, headers=paste_headers, timeout=5).json()
+    send = requests.post(PASTEE_BASE_URL, json=payload, headers=paste_headers, timeout=10).json()
     return send["id"]
 
 def paste_fetch(title):
     key = get_key(title)
 
-    request = requests.get(f"{PASTEE_BASE_URL}/{key}", headers=paste_headers, timeout=5)
+    request = requests.get(f"{PASTEE_BASE_URL}/{key}", headers=paste_headers, timeout=10)
     if request.status_code != 200:
         pass
     paste_data = request.text
@@ -63,18 +63,12 @@ def paste_fetch(title):
         data = ast.literal_eval(data)
     return data
 
-if not global_vars.guild_list:
-    try:
-        global_vars.guild_list = paste_fetch(PASTE_NAME)
-    except:
-        pass
-
 def guild_list_update():
     guild_list = global_vars.guild_list
 
     key = get_key(PASTE_NAME)
 
-    guilds_fetched_list = requests.get(WYNN_GUILD_LIST_URL, params=wynn_headers, timeout=5).json()
+    guilds_fetched_list = requests.get(WYNN_GUILD_LIST_URL, params=wynn_headers, timeout=10).json()
 
     checklist = []
 
@@ -83,7 +77,7 @@ def guild_list_update():
             checklist.append(guildname)
 
     for guildname in checklist:
-        request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={guildname}", params=wynn_headers, timeout=5)
+        request = requests.get(f"{WYNN_GUILD_STATS_URL}&command={guildname}", params=wynn_headers, timeout=10)
         if request.status_code != 200:
             continue
         guild_stats = request.json()
@@ -95,14 +89,20 @@ def guild_list_update():
             guild_list[prefix] = guildname
         time.sleep(0.6)
 
-    requests.delete(f"https://api.paste.ee/v1/pastes/{key}", headers=paste_headers, timeout=5).json()
+    requests.delete(f"https://api.paste.ee/v1/pastes/{key}", headers=paste_headers, timeout=10).json()
 
     payload = {"description":PASTE_NAME, "expiration":"31536000", "sections":[{"contents":str(guild_list).replace("\'","\"")}]}
-    requests.post("https://api.paste.ee/v1/pastes", json=payload, headers=paste_headers, timeout=5)
+    requests.post("https://api.paste.ee/v1/pastes", json=payload, headers=paste_headers, timeout=10)
 
 class GuildListUpdater(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        if not global_vars.guild_list:
+            try:
+                global_vars.guild_list = paste_fetch(PASTE_NAME)
+            except:
+                pass
 
         if not global_vars.dev_mode:
             self.run_playtime_update.start()
