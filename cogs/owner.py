@@ -538,5 +538,18 @@ class OwnerCommands(commands.Cog):
 
             await ctx.send(embed=embed)
 
+    @commands.command()
+    async def kill(self, ctx):
+        if ctx.author.id == BOT_OWNER:
+            try:
+                await ctx.message.delete()
+            except:
+                pass
+
+            await ctx.send("Killing bot instance")
+
+            await self.bot.close()
+            exit()
+
 async def setup(bot):
     await bot.add_cog(OwnerCommands(bot))
