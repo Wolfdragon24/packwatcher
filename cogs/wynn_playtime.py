@@ -115,7 +115,7 @@ def get_repo_data(filename):
     try:
         data = repo.get_contents(filename).decoded_content.decode().replace("'","\"")
         return (repo.get_contents(filename), json.loads(data))
-    except github.GithubException:
+    except AssertionError:
         ref = repo.get_git_ref("heads/main")
         tree = repo.get_git_tree(ref.object.sha, recursive='/' in filename).tree
         sha = [x.sha for x in tree if x.path == filename]
