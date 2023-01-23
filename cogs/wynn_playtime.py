@@ -618,7 +618,7 @@ class PlaytimeUpdater(commands.Cog):
         for time_set in enumerate(data_sets.items()):
             user_sets = time_set[1][1]
             for user_set in user_sets:
-                uuid = user_set["uuid"]
+                uuid = user_set["uuid"].replace("-","")
                 if (members == "all" and user_set["guild"] == guild_prefix) or (members != "all" and uuid in active_members):
                     playtime_stats[uuid] = user_set["duration"] if uuid not in playtime_stats else (playtime_stats[uuid] + user_set["duration"])
 
