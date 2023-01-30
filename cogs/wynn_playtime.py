@@ -55,6 +55,9 @@ ERROR_HEX = 0xeb1515
 SUCCESS_HEX = 0x6edd67
 EMBED_LIMIT = 5000
 
+nia_alert_channels = [861058162354159616,766402801479188490]
+lxa_alert_channels = [863897825119830036]
+
 paste_headers = {'X-Auth-Token': USER_KEY}
 wynn_headers = {"apikey": WYNN_TOKEN}
 
@@ -148,6 +151,7 @@ class PlaytimeUpdater(commands.Cog):
         self.stored_changing = {}
         self.stored_members = {}
         self.changing_counter = 5
+        self.members_change = {'lxa':[[], []], 'nia':[[], []]}
 
         self.playtime_file = None
         self.members_file = None
@@ -203,6 +207,7 @@ class PlaytimeUpdater(commands.Cog):
         now_time = datetime.now(TIMEZONE)
         text_time = now_time.strftime("%H-%d/%m/%y")
         text_day = now_time.strftime("%d/%m/%y")
+        prev_text_day = (now_time - timedelta(days=1)).strftime("%d/%m/%y")
 
         guild_players, guild_players_id = self.get_guild_members(guilds_to_check)
 
@@ -262,6 +267,38 @@ class PlaytimeUpdater(commands.Cog):
                     except github.GithubException:
                         pass
 
+        try:
+            if self.stored_members[text_day]["Nia"] != guild_players_id["Nia"]:
+                leftmem = [uuid for uuid in self.stored_members[text_day]["Nia"] if uuid not in guild_players_id["Nia"]]
+                self.members_change['nia'][1].extend(leftmem)
+                joinmem = [uuid for uuid in guild_players_id["Nia"] if uuid not in self.stored_members[text_day]["Nia"]]
+                self.members_change['nia'][0].extend(joinmem)
+        except:
+            try:
+                if self.stored_members[prev_text_day]["Nia"] != guild_players_id["Nia"]:
+                    leftmem = [uuid for uuid in self.stored_members[prev_text_day]["Nia"] if uuid not in guild_players_id["Nia"]]
+                    self.members_change['nia'][1].extend(leftmem)
+                    joinmem = [uuid for uuid in guild_players_id["Nia"] if uuid not in self.stored_members[prev_text_day]["Nia"]]
+                    self.members_change['nia'][0].extend(joinmem)
+            except:
+                pass
+
+        try:
+            if self.stored_members[text_day]["LXA"] != guild_players_id["LXA"]:
+                leftmem = [uuid for uuid in self.stored_members[text_day]["LXA"] if uuid not in guild_players_id["LXA"]]
+                self.members_change['lxa'][1].extend(leftmem)
+                joinmem = [uuid for uuid in guild_players_id["LXA"] if uuid not in self.stored_members[text_day]["LXA"]]
+                self.members_change['lxa'][0].extend(joinmem)
+        except:
+            try:
+                if self.stored_members[prev_text_day]["LXA"] != guild_players_id["LXA"]:
+                    leftmem = [uuid for uuid in self.stored_members[prev_text_day]["LXA"] if uuid not in guild_players_id["LXA"]]
+                    self.members_change['lxa'][1].extend(leftmem)
+                    joinmem = [uuid for uuid in guild_players_id["LXA"] if uuid not in self.stored_members[prev_text_day]["LXA"]]
+                    self.members_change['lxa'][0].extend(joinmem)
+            except:
+                pass
+
     def get_guild_members(self, guild_names):
         guild_players = {}
         guild_players_id = {}
@@ -316,6 +353,98 @@ class PlaytimeUpdater(commands.Cog):
     @tasks.loop(minutes=1)
     async def run_playtime_update(self):
         await asyncio.get_event_loop().run_in_executor(ThreadPoolExecutor(), self.playtime_update)
+
+        try:
+            if self.members_change['nia'][1] or self.members_change['nia'][0]:
+                joinoutdata = ""
+                leftoutdata = ""
+
+                for uuid in self.members_change['nia'][1]:
+                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+
+                    uname = data["raw"]["name"]
+                    fetuuid = data["raw"]["id"]
+
+                    if leftoutdata:
+                        leftoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        leftoutdata = f"- {uname} [{fetuuid}]"
+
+                for uuid in self.members_change['nia'][0]:
+                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+
+                    uname = data["raw"]["name"]
+                    fetuuid = data["raw"]["id"]
+
+                    if joinoutdata:
+                        joinoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        joinoutdata = f"- {uname} [{fetuuid}]"
+
+                embed = discord.Embed(title="Nerfuria - Members Change", color=0xce34ad)
+
+                if joinoutdata:
+                    embed.add_field(name="New Members",value=joinoutdata)
+                if leftoutdata:
+                    embed.add_field(name="Ex-Members",value=leftoutdata)
+
+                req = "Automated Member Tracking"
+                embed.set_footer(text=req)
+
+                for channel_id in nia_alert_channels:
+                    try:
+                        channel = self.bot.get_channel(channel_id)
+                        await channel.send(embed=embed)
+                    except:
+                        pass
+
+            if self.members_change['lxa'][1] or self.members_change['lxa'][0]:
+                joinoutdata = ""
+                leftoutdata = ""
+
+                for uuid in self.members_change['lxa'][1]:
+                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+
+                    uname = data["raw"]["name"]
+                    fetuuid = data["raw"]["id"]
+
+                    if leftoutdata:
+                        leftoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        leftoutdata = f"- {uname} [{fetuuid}]"
+
+                for uuid in self.members_change['lxa'][0]:
+                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+
+                    uname = data["raw"]["name"]
+                    fetuuid = data["raw"]["id"]
+
+                    if joinoutdata:
+                        joinoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        joinoutdata = f"- {uname} [{fetuuid}]"
+
+                embed = discord.Embed(title="Lux Nova - Members Change", color=0xce34ad)
+
+                if joinoutdata:
+                    embed.add_field(name="New Members",value=joinoutdata)
+                if leftoutdata:
+                    embed.add_field(name="Ex-Members",value=leftoutdata)
+
+                req = "Automated Member Tracking"
+                embed.set_footer(text=req)
+
+                for channel_id in lxa_alert_channels:
+                    try:
+                        channel = self.bot.get_channel(channel_id)
+
+                        await channel.send(embed=embed)
+                    except:
+                        pass
+
+            self.members_change = {'lxa':[[], []], 'nia':[[], []]}
+        except:
+            pass
 
     @commands.hybrid_command(name="playtime")
     async def playtime(self, ctx: commands.Context, form: str = None, data: str = None, members: str = None,  guild: str = None):
