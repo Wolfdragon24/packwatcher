@@ -360,26 +360,32 @@ class PlaytimeUpdater(commands.Cog):
                 leftoutdata = ""
 
                 for uuid in self.members_change['nia'][1]:
-                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    try:
+                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
 
-                    uname = data["raw"]["name"]
-                    fetuuid = data["raw"]["id"]
+                        uname = data["raw"]["name"]
+                        fetuuid = data["raw"]["id"]
 
-                    if leftoutdata:
-                        leftoutdata += f"\n- {uname} [{fetuuid}]"
-                    else:
-                        leftoutdata = f"- {uname} [{fetuuid}]"
+                        if leftoutdata:
+                            leftoutdata += f"\n- {uname} [{fetuuid}]"
+                        else:
+                            leftoutdata = f"- {uname} [{fetuuid}]"
+                    except:
+                        pass
 
                 for uuid in self.members_change['nia'][0]:
-                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    try:
+                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
 
-                    uname = data["raw"]["name"]
-                    fetuuid = data["raw"]["id"]
+                        uname = data["raw"]["name"]
+                        fetuuid = data["raw"]["id"]
 
-                    if joinoutdata:
-                        joinoutdata += f"\n- {uname} [{fetuuid}]"
-                    else:
-                        joinoutdata = f"- {uname} [{fetuuid}]"
+                        if joinoutdata:
+                            joinoutdata += f"\n- {uname} [{fetuuid}]"
+                        else:
+                            joinoutdata = f"- {uname} [{fetuuid}]"
+                    except:
+                        pass
 
                 embed = discord.Embed(title="Nerfuria - Members Change", color=0xce34ad)
 
@@ -403,26 +409,32 @@ class PlaytimeUpdater(commands.Cog):
                 leftoutdata = ""
 
                 for uuid in self.members_change['lxa'][1]:
-                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    try:
+                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
 
-                    uname = data["raw"]["name"]
-                    fetuuid = data["raw"]["id"]
+                        uname = data["raw"]["name"]
+                        fetuuid = data["raw"]["id"]
 
-                    if leftoutdata:
-                        leftoutdata += f"\n- {uname} [{fetuuid}]"
-                    else:
-                        leftoutdata = f"- {uname} [{fetuuid}]"
+                        if leftoutdata:
+                            leftoutdata += f"\n- {uname} [{fetuuid}]"
+                        else:
+                            leftoutdata = f"- {uname} [{fetuuid}]"
+                    except:
+                        pass
 
                 for uuid in self.members_change['lxa'][0]:
-                    data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    try:
+                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
 
-                    uname = data["raw"]["name"]
-                    fetuuid = data["raw"]["id"]
+                        uname = data["raw"]["name"]
+                        fetuuid = data["raw"]["id"]
 
-                    if joinoutdata:
-                        joinoutdata += f"\n- {uname} [{fetuuid}]"
-                    else:
-                        joinoutdata = f"- {uname} [{fetuuid}]"
+                        if joinoutdata:
+                            joinoutdata += f"\n- {uname} [{fetuuid}]"
+                        else:
+                            joinoutdata = f"- {uname} [{fetuuid}]"
+                    except:
+                        pass
 
                 embed = discord.Embed(title="Lux Nova - Members Change", color=0xce34ad)
 
