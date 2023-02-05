@@ -26,6 +26,7 @@ config = {
 
 intents = discord.Intents.all()
 handler = logging.FileHandler(filename='bot.log', encoding='utf-8')
+logging.getLogger('quart.serving').setLevel(logging.ERROR)
 
 bot = commands.Bot(command_prefix=".", intents=intents)
 bot.remove_command("help")
