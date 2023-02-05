@@ -360,32 +360,26 @@ class PlaytimeUpdater(commands.Cog):
                 leftoutdata = ""
 
                 for uuid in self.members_change['nia'][1]:
-                    try:
-                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    data = requests.get(f"{MINETOOLS_UUID_API}/{uuid}").json()
 
-                        uname = data["raw"]["name"]
-                        fetuuid = data["raw"]["id"]
+                    uname = data["name"]
+                    fetuuid = data["id"]
 
-                        if leftoutdata:
-                            leftoutdata += f"\n- {uname} [{fetuuid}]"
-                        else:
-                            leftoutdata = f"- {uname} [{fetuuid}]"
-                    except:
-                        pass
+                    if leftoutdata:
+                        leftoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        leftoutdata = f"- {uname} [{fetuuid}]"
 
                 for uuid in self.members_change['nia'][0]:
-                    try:
-                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    data = requests.get(f"{MINETOOLS_UUID_API}/{uuid}").json()
 
-                        uname = data["raw"]["name"]
-                        fetuuid = data["raw"]["id"]
+                    uname = data["name"]
+                    fetuuid = data["id"]
 
-                        if joinoutdata:
-                            joinoutdata += f"\n- {uname} [{fetuuid}]"
-                        else:
-                            joinoutdata = f"- {uname} [{fetuuid}]"
-                    except:
-                        pass
+                    if joinoutdata:
+                        joinoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        joinoutdata = f"- {uname} [{fetuuid}]"
 
                 embed = discord.Embed(title="Nerfuria - Members Change", color=0xce34ad)
 
@@ -409,32 +403,26 @@ class PlaytimeUpdater(commands.Cog):
                 leftoutdata = ""
 
                 for uuid in self.members_change['lxa'][1]:
-                    try:
-                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    data = requests.get(f"{MINETOOLS_UUID_API}/{uuid}").json()
 
-                        uname = data["raw"]["name"]
-                        fetuuid = data["raw"]["id"]
+                    uname = data["name"]
+                    fetuuid = data["id"]
 
-                        if leftoutdata:
-                            leftoutdata += f"\n- {uname} [{fetuuid}]"
-                        else:
-                            leftoutdata = f"- {uname} [{fetuuid}]"
-                    except:
-                        pass
+                    if leftoutdata:
+                        leftoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        leftoutdata = f"- {uname} [{fetuuid}]"
 
                 for uuid in self.members_change['lxa'][0]:
-                    try:
-                        data = requests.get(f"{MINETOOLS_PROFILE_API}/{uuid}").json()
+                    data = requests.get(f"{MINETOOLS_UUID_API}/{uuid}").json()
 
-                        uname = data["raw"]["name"]
-                        fetuuid = data["raw"]["id"]
+                    uname = data["name"]
+                    fetuuid = data["id"]
 
-                        if joinoutdata:
-                            joinoutdata += f"\n- {uname} [{fetuuid}]"
-                        else:
-                            joinoutdata = f"- {uname} [{fetuuid}]"
-                    except:
-                        pass
+                    if joinoutdata:
+                        joinoutdata += f"\n- {uname} [{fetuuid}]"
+                    else:
+                        joinoutdata = f"- {uname} [{fetuuid}]"
 
                 embed = discord.Embed(title="Lux Nova - Members Change", color=0xce34ad)
 
@@ -456,6 +444,7 @@ class PlaytimeUpdater(commands.Cog):
 
             self.members_change = {'lxa':[[], []], 'nia':[[], []]}
         except:
+            raise
             pass
 
     @commands.hybrid_command(name="playtime")
