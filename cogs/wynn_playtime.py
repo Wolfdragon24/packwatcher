@@ -443,9 +443,10 @@ class PlaytimeUpdater(commands.Cog):
                         pass
 
             self.members_change = {'lxa':[[], []], 'nia':[[], []]}
-        except:
-            raise
-            pass
+        except Exception as e:
+            errorchannel = bot.get_channel(837917735089340446)
+            ertext = f"```{e}```"
+            await errorchannel.send(ertext)
 
     @commands.hybrid_command(name="playtime")
     async def playtime(self, ctx: commands.Context, form: str = None, data: str = None, members: str = None,  guild: str = None):
