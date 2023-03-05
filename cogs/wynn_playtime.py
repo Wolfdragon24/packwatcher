@@ -444,7 +444,7 @@ class PlaytimeUpdater(commands.Cog):
 
             self.members_change = {'lxa':[[], []], 'nia':[[], []]}
         except Exception as e:
-            errorchannel = bot.get_channel(837917735089340446)
+            errorchannel = self.bot.get_channel(837917735089340446)
             ertext = f"```{e}```"
             await errorchannel.send(ertext)
 
