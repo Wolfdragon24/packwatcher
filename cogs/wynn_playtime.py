@@ -19,6 +19,7 @@ from github import Github
 from urllib3 import Retry
 from discord.ext import tasks, commands
 from pymongo import MongoClient
+from bitdotio import bitdotio
 
 import global_vars
 
@@ -39,6 +40,8 @@ MONGO_USER = quote_plus(config["MONGODB_USER"])
 MONGO_PW = quote_plus(config["MONGODB_PASSWORD"])
 MONGO_URL = config["MONGODB_URL"]
 BOT_OWNER = int(config["BOT_OWNER"])
+BITIO_READ = config["BITIO_READ"]
+BITIO_EDIT = config["BITIO_EDIT"]
 
 PASTEE_BASE_URL = "https://api.paste.ee/v1/pastes"
 WYNN_BASE_URL = "https://api.wynncraft.com/public_api.php"
@@ -69,6 +72,8 @@ repo = git.get_user().get_repo("packwatcher-data")
 cluster = MongoClient(f"mongodb+srv://{MONGO_USER}:{MONGO_PW}@{MONGO_URL}")
 db = cluster["discordbot"]
 settings = [*db["settings"].find()][0]
+
+bitio = bitdotio(BITIO_EDIT)
 
 guilds_to_check = json.loads(config["GUILDS"])
 
@@ -148,6 +153,8 @@ class PlaytimeUpdater(commands.Cog):
         self.bot = bot
 
         self.stored_playtime = {}
+        self.stored_hour = -1
+        self.hourly_playtime = []
         self.stored_changing = {}
         self.stored_members = {}
         self.changing_counter = 5
@@ -187,6 +194,13 @@ class PlaytimeUpdater(commands.Cog):
             self.stored_changing = paste_fetch(PASTE_NAME)
         if not self.stored_members:
             self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
+
+        # Removes data more than two months in the past
+        for time_set in self.stored_playtime:
+            if datetime.strptime(time_set, "%H-%d/%m/%y") < (datetime.now(TIMEZONE) - timedelta(days=62)):
+                del self.stored_playtime[time_set]
+            else:
+                break
 
         old_stored = copy.deepcopy(self.stored_playtime)
         old_members = copy.deepcopy(self.stored_members)
@@ -326,6 +340,22 @@ class PlaytimeUpdater(commands.Cog):
 
     def update_stored_data(self, all_players, guild_players, text_time):
         to_clear = []
+
+        # New hour so must update database
+        curr_time = datetime.strptime(text_time, "%H-%d/%m/%y")
+        hour_str = curr_time.strftime("%H")
+        if self.stored_hour != hour_str and self.hourly_playtime:
+            self.stored_hour = hour_str
+
+            timestamp = curr_time.replace(minute=0, second=0, microsecond=0).timestamp()
+            nia_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "nia"]
+            lxa_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "lxa"]
+            ozi_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "ozi"]
+
+            with bitio.pooled_cursor('data') as cursor:
+                cursor.execute(f"INSERT INTO data (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
+
+            self.hourly_playtime = []
 
         for player in self.stored_changing:
             if player not in all_players:
