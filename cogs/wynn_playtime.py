@@ -154,6 +154,8 @@ class PlaytimeUpdater(commands.Cog):
 
         self.stored_playtime = {}
         self.stored_hour = -1
+        self.stored_day = -1
+        self.daily_members = {}
         self.hourly_playtime = []
         self.stored_changing = {}
         self.stored_members = {}
@@ -201,6 +203,11 @@ class PlaytimeUpdater(commands.Cog):
                 del self.stored_playtime[time_set]
             else:
                 break
+        for time_set in self.stored_members:
+            if datetime.strptime(time_set, "%d/%m/%y") < (datetime.now(TIMEZONE) - timedelta(days=62)):
+                del self.stored_members[time_set]
+            else:
+                break
 
         old_stored = copy.deepcopy(self.stored_playtime)
         old_members = copy.deepcopy(self.stored_members)
@@ -230,6 +237,7 @@ class PlaytimeUpdater(commands.Cog):
                 self.stored_changing[player] = int(time.time())
 
         self.stored_members[text_day] = guild_players_id
+        self.daily_members = guild_players_id
 
         to_clear = self.update_stored_data(all_players, guild_players, text_time)
 
@@ -344,6 +352,7 @@ class PlaytimeUpdater(commands.Cog):
         # New hour so must update database
         curr_time = datetime.strptime(text_time, "%H-%d/%m/%y")
         hour_str = curr_time.strftime("%H")
+        day_str = curr_time.strftime("%d")
         if self.stored_hour != hour_str and self.hourly_playtime:
             self.stored_hour = hour_str
 
@@ -353,9 +362,18 @@ class PlaytimeUpdater(commands.Cog):
             ozi_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "ozi"]
 
             with bitio.pooled_cursor('data') as cursor:
-                cursor.execute(f"INSERT INTO data (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
+                cursor.execute(f"INSERT INTO playtime (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
 
             self.hourly_playtime = []
+        if self.stored_day != day_str and self.daily_members:
+            self.stored_day = day_str
+
+            timestamp = curr_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+            nia_data = self.stored_day["Nia"]
+            lxa_data = self.stored_day["LXA"]
+
+            with bitio.pooled_cursor('data') as cursor:
+                cursor.execute(f"INSERT INTO members (timestamp, nia, lxa) VALUES ({timestamp}, {nia_data}, {lxa_data})")
 
         for player in self.stored_changing:
             if player not in all_players:
@@ -375,6 +393,7 @@ class PlaytimeUpdater(commands.Cog):
                     if prefix:
                         inputted_data = {"uuid": uuid, "duration": time_diff, "guild": prefix}
                         self.stored_playtime[text_time].append(inputted_data)
+                        self.hourly_playtime.append(inputted_data)
 
                 to_clear.append(player)
 
