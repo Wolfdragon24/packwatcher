@@ -5,6 +5,7 @@ async-timeout==4.0.2
 asyncio-dgram==2.1.2
 attrs==22.1.0
 autopep8==2.0.1
+bitdotio==2.2.1
 blinker==1.5
 certifi==2022.12.7
 cffi==1.15.1
