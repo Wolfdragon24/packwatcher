@@ -198,16 +198,25 @@ class PlaytimeUpdater(commands.Cog):
             self.members_file, self.stored_members = get_repo_data(MEMBERS_GIT)
 
         # Removes data more than two months in the past
+        to_delete = []
         for time_set in self.stored_playtime:
             if datetime.strptime(time_set, "%H-%d/%m/%y").astimezone(TIMEZONE) < (datetime.now(TIMEZONE) - timedelta(days=62)):
-                del self.stored_playtime[time_set]
+                to_delete.append(time_set)
             else:
                 break
+        
+        for time_set in to_delete:
+            del self.stored_playtime[time_set]
+        
+        to_delete = []
         for time_set in self.stored_members:
             if datetime.strptime(time_set, "%d/%m/%y").astimezone(TIMEZONE) < (datetime.now(TIMEZONE) - timedelta(days=62)):
-                del self.stored_members[time_set]
+                to_delete.append(time_set)
             else:
                 break
+
+        for time_set in to_delete:
+            del self.stored_members[time_set]
 
         old_stored = copy.deepcopy(self.stored_playtime)
         old_members = copy.deepcopy(self.stored_members)
