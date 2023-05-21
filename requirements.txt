@@ -30,6 +30,7 @@ mcstatus==10.0.1
 multidict==6.0.3
 priority==2.0.0
 psutil==5.9.4
+psycopg2==2.9.6
 pycodestyle==2.10.0
 pycparser==2.21
 PyGithub==1.57
