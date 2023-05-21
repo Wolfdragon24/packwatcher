@@ -378,8 +378,8 @@ class PlaytimeUpdater(commands.Cog):
             self.stored_day = day_str
 
             timestamp = curr_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-            nia_data = self.stored_day["Nia"]
-            lxa_data = self.stored_day["LXA"]
+            nia_data = self.daily_members["Nia"]
+            lxa_data = self.daily_members["LXA"]
 
             with bitio.pooled_cursor('data') as cursor:
                 cursor.execute(f"INSERT INTO members (timestamp, nia, lxa) VALUES ({timestamp}, {nia_data}, {lxa_data})")
