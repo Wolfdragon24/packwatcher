@@ -280,11 +280,13 @@ class PlaytimeUpdater(commands.Cog):
                     try:
                         self.playtime_file = repo.update_file(PLAYTIME_GIT, "Automated Data Generation", str(self.stored_playtime), self.playtime_file.sha)["content"]
                     except github.GithubException:
+                        raise
                         pass
                 else:
                     try:
                         self.playtime_file = repo.create_file(PLAYTIME_GIT, "Automated Data Generation", str(self.stored_playtime))["content"]
                     except github.GithubException:
+                        raise
                         pass
             if not self.stored_members or self.stored_members != old_members:
                 if self.members_file:
