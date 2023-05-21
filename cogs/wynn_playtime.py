@@ -199,12 +199,12 @@ class PlaytimeUpdater(commands.Cog):
 
         # Removes data more than two months in the past
         for time_set in self.stored_playtime:
-            if datetime.strptime(time_set, "%H-%d/%m/%y") < (datetime.now(TIMEZONE) - timedelta(days=62)):
+            if datetime.strptime(time_set, "%H-%d/%m/%y").astimezone(TIMEZONE) < (datetime.now(TIMEZONE) - timedelta(days=62)):
                 del self.stored_playtime[time_set]
             else:
                 break
         for time_set in self.stored_members:
-            if datetime.strptime(time_set, "%d/%m/%y") < (datetime.now(TIMEZONE) - timedelta(days=62)):
+            if datetime.strptime(time_set, "%d/%m/%y").astimezone(TIMEZONE) < (datetime.now(TIMEZONE) - timedelta(days=62)):
                 del self.stored_members[time_set]
             else:
                 break
