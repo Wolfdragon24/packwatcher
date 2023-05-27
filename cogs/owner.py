@@ -65,7 +65,7 @@ class OwnerCommands(commands.Cog):
         self.bot = bot
         if not global_vars.dev_mode:
             self.memory_check.start()
-            #self.process_mem_check.start()
+            self.process_mem_check.start()
             self.bot_logging.start()
 
         try:
