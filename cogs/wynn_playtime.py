@@ -372,7 +372,7 @@ class PlaytimeUpdater(commands.Cog):
             lxa_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "lxa"]
             ozi_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "ozi"]
 
-            with bitio.pooled_cursor('data') as cursor:
+            with bitio.pooled_cursor('PackWatcher/data') as cursor:
                 cursor.execute(f"INSERT INTO playtime (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
 
             self.hourly_playtime = []
@@ -383,7 +383,7 @@ class PlaytimeUpdater(commands.Cog):
             nia_data = self.daily_members["Nia"]
             lxa_data = self.daily_members["LXA"]
 
-            with bitio.pooled_cursor('data') as cursor:
+            with bitio.pooled_cursor('PackWatcher/data') as cursor:
                 cursor.execute(f"INSERT INTO members (timestamp, nia, lxa) VALUES ({timestamp}, {nia_data}, {lxa_data})")
 
         for player in self.stored_changing:
