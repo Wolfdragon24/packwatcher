@@ -361,30 +361,33 @@ class PlaytimeUpdater(commands.Cog):
         to_clear = []
 
         # New hour so must update database
-        curr_time = datetime.strptime(text_time, "%H-%d/%m/%y")
-        hour_str = curr_time.strftime("%H")
-        day_str = curr_time.strftime("%d")
-        if self.stored_hour != hour_str and self.hourly_playtime:
-            self.stored_hour = hour_str
+        try:
+           curr_time = datetime.strptime(text_time, "%H-%d/%m/%y")
+           hour_str = curr_time.strftime("%H")
+           day_str = curr_time.strftime("%d")
+           if self.stored_hour != hour_str and self.hourly_playtime:
+               self.stored_hour = hour_str
 
-            timestamp = curr_time.replace(minute=0, second=0, microsecond=0).timestamp()
-            nia_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "nia"]
-            lxa_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "lxa"]
-            ozi_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "ozi"]
+               timestamp = curr_time.replace(minute=0, second=0, microsecond=0).timestamp()
+               nia_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "nia"]
+               lxa_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "lxa"]
+               ozi_data = [{"uuid":item["uuid"], "duration":item["duration"]} for item in self.hourly_playtime if item["prefix"] == "ozi"]
 
-            with bitio.pooled_cursor('PackWatcher/data') as cursor:
-                cursor.execute(f"INSERT INTO playtime (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
+               with bitio.pooled_cursor('PackWatcher/data') as cursor:
+                   cursor.execute(f"INSERT INTO playtime (timestamp, nia, lxa, ozi) VALUES ({timestamp}, {nia_data}, {lxa_data}, {ozi_data})")
 
-            self.hourly_playtime = []
-        if self.stored_day != day_str and self.daily_members:
-            self.stored_day = day_str
+               self.hourly_playtime = []
+           if self.stored_day != day_str and self.daily_members:
+               self.stored_day = day_str
 
-            timestamp = curr_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-            nia_data = self.daily_members["Nia"]
-            lxa_data = self.daily_members["LXA"]
+               timestamp = curr_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+               nia_data = self.daily_members["Nia"]
+               lxa_data = self.daily_members["LXA"]
 
-            with bitio.pooled_cursor('PackWatcher/data') as cursor:
-                cursor.execute(f"INSERT INTO members (timestamp, nia, lxa) VALUES ({timestamp}, {nia_data}, {lxa_data})")
+               with bitio.pooled_cursor('PackWatcher/data') as cursor:
+                   cursor.execute(f"INSERT INTO members (timestamp, nia, lxa) VALUES ({timestamp}, {nia_data}, {lxa_data})")
+        except:
+            pass
 
         for player in self.stored_changing:
             if player not in all_players:
